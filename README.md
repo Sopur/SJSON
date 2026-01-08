@@ -41,7 +41,7 @@ To see all examples, go to the examples directory.
 
 ```cpp
 // examples/stream.cpp
-#include "../sjson.hpp"
+#include "sjson.hpp"
 #include "util.hpp"
 
 int main() {
@@ -59,7 +59,7 @@ int main() {
 
 ```cpp
 // examples/string.cpp
-#include "../sjson.hpp"
+#include "sjson.hpp"
 #include "util.hpp"
 
 int main() {
@@ -77,7 +77,7 @@ int main() {
 
 ```cpp
 // examples/listeners.cpp
-#include "../sjson.hpp"
+#include "sjson.hpp"
 #include "util.hpp"
 
 int main() {
@@ -107,7 +107,7 @@ int main() {
 
 ```cpp
 // examples/recovery.cpp
-#include "../sjson.hpp"
+#include "sjson.hpp"
 #include "util.hpp"
 
 int main() {
