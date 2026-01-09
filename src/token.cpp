@@ -1,14 +1,13 @@
 #include "token.hpp"
 #include "syntax.hpp"
 #include "util.hpp"
+#include <cstdint>
+#include <iostream>
 
 namespace SJSON {
     Token::Token() {
         reset();
     }
-    Token::Token(const Token& token):
-        type(token.type),
-        src(token.src) {}
 
     // Parsing shit
     bool Token::is_operator() const noexcept {
@@ -21,6 +20,8 @@ namespace SJSON {
         return !is_operator() && !is_unresolved();
     }
     void Token::reset() {
+        escape_state = EscapeState::None;
+        escape_sequence = "";
         type = TokenType::Unresolved;
         src = "";
     }
@@ -37,7 +38,7 @@ namespace SJSON {
                     type = TokenType::Number;
                 } else if (letters_set.contains(c)) {
                     type = TokenType::Keyword;
-                } else if (c == '"') {
+                } else if (c == string_char) {
                     type = TokenType::String;
                 } else {
                     throw sjson_parse_error::unexpected_character(c);
@@ -46,10 +47,45 @@ namespace SJSON {
             }
             case TokenType::Operator:
             case TokenType::Keyword:
-            case TokenType::Number:
-            case TokenType::String: {
+            case TokenType::Number: {
                 src += c;
                 return;
+            }
+            case TokenType::String: {
+                switch (escape_state) {
+                    case EscapeState::None: {
+                        if (c == escape_char) {
+                            escape_state = EscapeState::Escaping;
+                            return;
+                        }
+                        if (c == string_char)
+                            escape_state = EscapeState::End;
+                        src += c;
+                        return;
+                    }
+                    case EscapeState::End:
+                        throw sjson_internal_parse_error::invalid_escape_state("token.push(char) -> (string has already finished lexing)");
+                    case EscapeState::Escaping: {
+                        if (c == sequence_escape_char) {
+                            escape_state = EscapeState::Sequence;
+                        } else {
+                            src += escape_map.contains(c) ? escape_map.at(c) : c;
+                            escape_state = EscapeState::None;
+                        }
+                        return;
+                    }
+                    case EscapeState::Sequence: {
+                        escape_sequence += c;
+                        if (escape_sequence.size() != sequence_escape_len) return;
+                        if (!is_valid_integer(escape_sequence, 16))
+                            throw sjson_parse_error::invalid_escape(escape_sequence);
+                        src += hexToUTF8(escape_sequence);
+                        escape_state = EscapeState::None;
+                        escape_sequence = "";
+                        return;
+                    }
+                }
+                throw sjson_internal_parse_error::invalid_escape_state("token.push(char)");
             }
         }
         throw sjson_internal_parse_error::invalid_token_type("token.push(char)");
@@ -71,7 +107,8 @@ namespace SJSON {
             case TokenType::Operator: return true;
             case TokenType::Keyword: return !letters_set.contains(c) || whitespace_set.contains(c);
             case TokenType::Number: return (!decimals_set.contains(c) && !special_numbers_set.contains(c)) || whitespace_set.contains(c);
-            case TokenType::String: return src.size() > 1 && src.ends_with('"') && !src.ends_with("\\\""); // String termination doesn't depend on the proceeding character
+            // String termination doesn't depend on the proceeding character
+            case TokenType::String: return escape_state == EscapeState::End;
         }
         throw sjson_internal_parse_error::invalid_token_type("token.is_terminating(char)");
     }
@@ -96,11 +133,9 @@ namespace SJSON {
         return std::stod(src);
     }
     JSString Token::to_string() const {
-        if (src.size() <= 1)
+        if (escape_state != EscapeState::End)
             throw sjson_parse_error::unexpected_eof();
-        if (!src.ends_with('"'))
-            throw sjson_parse_error::unexpected_eof();
-        return unescape(src);
+        return src.substr(1, src.size() - 2); // Remove preceding and proceeding string chars cuz everything is already escaped
     }
     JSValue Token::to_value() const {
         switch (type) {

@@ -32,6 +32,7 @@
 ### 5. Regular JSON Parsing
 
 -   This parser also supports **all of the above** with **normal strings**, so you may have **all the benefits without using a stream**.
+-   This parser is fully RFC4627 compliant, aside from syntax auto-correction (https://www.rfc-editor.org/rfc/rfc4627.html)
 
 ## Examples
 

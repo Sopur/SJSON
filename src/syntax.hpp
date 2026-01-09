@@ -19,6 +19,9 @@ namespace SJSON {
         static inline sjson_parse_error invalid_token(const char* type, const std::string& src) {
             return sjson_parse_error("Invalid " + std::string(type) + " of value '" + src + "'");
         }
+        static inline sjson_parse_error invalid_escape(const std::string& seq) {
+            return sjson_parse_error("Invalid escape sequence '" + seq + "' in string");
+        }
         static inline sjson_parse_error unexpected_token(const std::string& src) {
             return sjson_parse_error("Unexpected token of value '" + src + "'");
         }
@@ -48,6 +51,9 @@ namespace SJSON {
         static inline sjson_internal_parse_error invalid_token_type(const std::string& context) {
             return sjson_internal_parse_error("Encountered an invalid type in " + context);
         }
+        static inline sjson_internal_parse_error invalid_escape_state(const std::string& context) {
+            return sjson_internal_parse_error("Encountered an invalid escape state in " + context);
+        }
         static inline sjson_internal_parse_error new_chunk_before_finish() {
             return sjson_internal_parse_error("Attempted to set a new chunk before the previous chunk was done reading");
         }
@@ -69,6 +75,8 @@ namespace SJSON {
         True,
         False,
     };
+
+    // All operators are single-character
     inline const std::unordered_map<char, Operators> operator_map {
         {',', Operators::Comma},
         {':', Operators::Colon},
@@ -82,7 +90,8 @@ namespace SJSON {
         {"true", Keywords::True},
         {"false", Keywords::False},
     };
-    // Rip performance
+
+    // Things numbers could start with
     inline const std::unordered_set<char> decimals_set {
         '-',
         '0',
@@ -96,11 +105,14 @@ namespace SJSON {
         '8',
         '9',
     };
+    // Things numbers could include
     inline const std::unordered_set<char> special_numbers_set {
         '.',
         'e',
         '+',
     };
+
+    // Keywords contain only these letters
     inline const std::unordered_set<char> letters_set {
         'q',
         'w',
@@ -155,9 +167,34 @@ namespace SJSON {
         'N',
         'M',
     };
+
+    // Only these are included in the spec
     inline const std::unordered_set<char> whitespace_set {
         ' ',
-        '\n',
         '\t',
+        '\n',
+        '\r',
+    };
+
+    // Only these are explicitly listed as special characters in the spec (any others will be ignored)
+    enum class EscapeState {
+        None,
+        End,
+        Escaping,
+        Sequence,
+    };
+    inline constexpr char string_char = '"';
+    inline constexpr char escape_char = '\\';
+    inline constexpr char sequence_escape_char = 'u'; // Follows the format uXXXX -> U+XXXX
+    inline constexpr int sequence_escape_len = 4;
+    inline const std::unordered_map<char, char> escape_map {
+        {'"', '"'},
+        {'\\', '\\'},
+        {'/', '/'},
+        {'b', '\b'},
+        {'f', '\f'},
+        {'n', '\n'},
+        {'r', '\r'},
+        {'t', '\t'},
     };
 } // namespace SJSON

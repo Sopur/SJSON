@@ -2,6 +2,7 @@
 #include "syntax.hpp"
 #include <charconv>
 #include <cstddef>
+#include <cstdint>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -26,14 +27,21 @@ namespace SJSON {
         oss << x;
         return oss.str();
     }
-    template <typename T = double>
     inline bool is_valid_number(const std::string& src) {
-        T value;
+        double value;
         auto [ptr, ec] = std::from_chars(src.data(), src.data() + src.size(), value);
         return ec == std::errc() && ptr == src.data() + src.size();
     }
-    inline bool is_valid_integer(const std::string& src) {
-        return is_valid_number<int>(src);
+    inline bool is_valid_integer(const std::string& src, int base = 10) {
+        uint32_t value;
+        auto [ptr, ec] = std::from_chars(src.data(), src.data() + src.size(), value, base);
+        return ec == std::errc() && ptr == src.data() + src.size();
+    }
+
+    inline std::string hexToUTF8(const std::string_view& hex) {
+        uint32_t value;
+        std::from_chars(hex.data(), hex.data() + hex.size(), value, 16);
+        return std::string(reinterpret_cast<char*>(&value), 1);
     }
 
     /*

@@ -1,0 +1,8 @@
+[paths]
+output = "a.out"
+source = ["src", "."]
+artifact = "obj"
+
+[options]
+compiler = "clang++"
+compilation-flags = "-Wall -O3 -std=c++23"

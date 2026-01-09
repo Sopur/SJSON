@@ -13,12 +13,16 @@ namespace SJSON {
     };
 
     class Token {
+    protected:
+        EscapeState escape_state;
+        std::string escape_sequence;
+
     public:
         TokenType type;
         std::string src;
 
         Token();
-        Token(const Token& token);
+        Token(const Token& token) = default;
         ~Token() = default;
 
         // Parsing shit

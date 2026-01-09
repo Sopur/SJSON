@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <ostream>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -74,9 +75,14 @@ namespace SJSON {
         const JSString& string() const;
         const JSObject& object() const;
         const JSArray& array() const;
+
+        // Debug shit
+        inline friend std::ostream& operator<<(std::ostream& out, const JSValue& v) {
+            return out << v.to_string(4);
+        }
     };
 
-    // Debug shit
+    // Static debug shit
     inline constexpr const char* type_to_string(JSValueType type) noexcept {
         switch (type) {
             case JSValueType::Null: return "Null";
