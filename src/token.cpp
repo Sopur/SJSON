@@ -1,8 +1,6 @@
 #include "token.hpp"
 #include "syntax.hpp"
 #include "util.hpp"
-#include <cstdint>
-#include <iostream>
 
 namespace SJSON {
     Token::Token() {
