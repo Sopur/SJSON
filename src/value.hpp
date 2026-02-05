@@ -44,11 +44,11 @@ namespace SJSON {
         JSValue(long v);
         JSValue(unsigned long v);
         JSValue(JSBoolean v);
-        JSValue(const JSString& v);
-        JSValue(const std::string_view& v);
+        JSValue(JSString v);
+        JSValue(std::string_view v);
         JSValue(const char* v);
-        JSValue(const JSObject& v);
-        JSValue(const JSArray& v);
+        JSValue(JSObject v);
+        JSValue(JSArray v);
         ~JSValue() = default;
 
         // Non-type specific

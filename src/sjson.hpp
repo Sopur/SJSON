@@ -11,7 +11,7 @@ namespace SJSON {
     typedef std::move_only_function<std::string()> JSONStream;
 
     class Parse {
-    private:
+    protected:
         JSONStream istream;
         VectorStack<JSValue*> references;
         JSPath path;
@@ -23,26 +23,26 @@ namespace SJSON {
         bool is_finished() const noexcept;
         bool readable() const noexcept;
         bool prev_is_type(JSValueType type) const;
-        void use_chunk(const std::string& src);
+        void use_chunk(std::string src);
         Token mk_token();
         Token read_token();
-        void parse_chunk(const std::string& src);
+        void parse_chunk(std::string src);
 
     public:
         JSValue value;
 
         Parse(JSONStream&& src, bool drop_generics = false);
-        Parse(const std::string& src);
+        Parse(std::string src);
         Parse(const Parse&) = delete;
-        Parse(Parse&&) noexcept = default;
         Parse& operator=(const Parse&) = delete;
+        Parse(Parse&&) noexcept = default;
         Parse& operator=(Parse&&) noexcept = default;
         ~Parse() = default;
 
         // Data parsing
-        static JSValue string(const std::string& src);
+        static JSValue string(std::string src);
         static JSValue stream(JSONStream&& src);
-        Parse& listen(const std::string& label, JSONCallback&& cb);
+        Parse& listen(std::string label, JSONCallback&& cb);
         bool next();
         void all();
 

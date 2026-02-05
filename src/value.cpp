@@ -19,16 +19,16 @@ namespace SJSON {
         src(JSNumber(v)) {}
     JSValue::JSValue(JSBoolean v):
         src(v) {}
-    JSValue::JSValue(const JSString& v):
-        src(v) {}
-    JSValue::JSValue(const std::string_view& v):
-        src(JSString(v)) {}
+    JSValue::JSValue(JSString v):
+        src(std::move(v)) {}
+    JSValue::JSValue(std::string_view v):
+        src(JSString(std::move(v))) {}
     JSValue::JSValue(const char* v):
         src(JSString(v)) {}
-    JSValue::JSValue(const JSObject& v):
-        src(v) {}
-    JSValue::JSValue(const JSArray& v):
-        src(v) {}
+    JSValue::JSValue(JSObject v):
+        src(std::move(v)) {}
+    JSValue::JSValue(JSArray v):
+        src(std::move(v)) {}
 
     JSValueType JSValue::type() const {
         return std::visit([](const auto& v) -> JSValueType {
@@ -69,7 +69,7 @@ namespace SJSON {
             if constexpr (std::is_same_v<V, JSNull>) return "null";
             if constexpr (std::is_same_v<V, JSNumber>) return num_to_string(v);
             if constexpr (std::is_same_v<V, JSBoolean>) return v ? "true" : "false";
-            if constexpr (std::is_same_v<V, JSString>) return escape(v);
+            if constexpr (std::is_same_v<V, JSString>) return jsstring_escape(v);
             if constexpr (std::is_same_v<V, JSObject> || std::is_same_v<V, JSArray>) {
                 // Most of this logic is the same for objects and arrays with slight differences
                 constexpr bool is_obj = std::is_same_v<V, JSObject>;
@@ -85,7 +85,7 @@ namespace SJSON {
                 for (const auto& el : v) {
                     ss << (is_first ? start_char : ',') << newline << el_index;
                     if constexpr (is_obj)
-                        ss << escape(el.first) << ":" << space << el.second.to_string(index_length, index + 1);
+                        ss << jsstring_escape(el.first) << ":" << space << el.second.to_string(index_length, index + 1);
                     else
                         ss << el.to_string(index_length, index + 1);
                     is_first = false;

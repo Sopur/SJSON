@@ -23,6 +23,9 @@ namespace SJSON {
 
         Token();
         Token(const Token& token) = default;
+        Token& operator=(const Token& token) = default;
+        Token(Token&& token) = default;
+        Token& operator=(Token&& token) = default;
         ~Token() = default;
 
         // Parsing shit

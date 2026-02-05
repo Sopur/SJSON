@@ -5,6 +5,23 @@
 
 namespace SJSON {
     class Tester {
+    protected:
+        inline static void log_fail(const std::string& src, const std::string& output, const char* details = " ") {
+            std::cout << "[FAILED]" << details << "'" << src << "' -> '" << output << "'\n";
+        }
+        inline static void log_internal_fail(const std::string& src, const std::string& output) {
+            return log_fail(src, output, " (Internal Error) ");
+        }
+        inline static void log_pass(const std::string& src, const std::string& output) {
+            std::cout << "[PASSED] '" << src << "' -> " << output << "\n";
+        }
+        inline static void log(bool passed, const std::string& src, const std::string& output) {
+            if (passed)
+                return log_pass(src, output);
+            else
+                return log_fail(src, output);
+        }
+
     public:
         struct {
             int parsing_total = 0;
@@ -14,10 +31,8 @@ namespace SJSON {
             int internal_errors = 0;
         } tests;
 
-        inline Tester() {
-            run();
-        };
-        inline ~Tester() = default;
+        inline Tester() { run(); };
+        ~Tester() = default;
 
         inline std::string string(const std::string& src) const {
             // Simulate one character streams cuz it's the worse case scenario
@@ -35,12 +50,12 @@ namespace SJSON {
             tests.errors_total++;
             try {
                 auto output = string(src);
-                std::cout << "[FAILED] '" << src << "' -> '" << output << "'\n";
+                log_fail(src, output); // Error if success
             } catch (const sjson_parse_error& err) {
-                std::cout << "[PASSED] '" << src << "' -> " << err.what() << "\n";
+                log_pass(src, err.what()); // Success if error
                 tests.errors_passed++;
             } catch (const sjson_internal_parse_error& err) {
-                std::cout << "[FAILED] (Internal Parse Error) '" << src << "' -> " << err.what() << "\n";
+                log_internal_fail(src, err.what());
                 tests.internal_errors++;
             }
         }
@@ -49,12 +64,12 @@ namespace SJSON {
             try {
                 auto output = string(src);
                 bool passed = output == expected;
-                std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] '" << src << "' -> '" << output << "'\n";
+                log(passed, src, output);
                 tests.parsing_passed += passed;
             } catch (const sjson_parse_error& err) {
-                std::cout << "[FAILED] (Parse Error) '" << src << "' -> " << err.what() << "\n";
+                log_fail(src, err.what());
             } catch (const sjson_internal_parse_error& err) {
-                std::cout << "[FAILED] (Internal Parse Error) '" << src << "' -> " << err.what() << "\n";
+                log_internal_fail(src, err.what());
                 tests.internal_errors++;
             }
         }
@@ -64,7 +79,8 @@ namespace SJSON {
 
         inline void run() {
             section("unstrict json");
-            test(R"("string")");
+            test(R"("string\n")");
+            test(R"("string\uffff")");
             test(R"("string \"quotes\"")");
             test("1");
             test("-1");
@@ -82,7 +98,7 @@ namespace SJSON {
             test("{}");
 
             section("array of literals");
-            test(R"(["string"])");
+            test(R"(["string\r"])");
             test(R"(["string","string \"quotes\"",""])");
             test("[1,2,3]");
             test("[1.23,4,5.67]");
@@ -100,10 +116,11 @@ namespace SJSON {
             test("[[],[1,2]]");
             test(R"([[],[1,[true,"string \"quotes\"",[]]],[]])");
             test("[[[[[[]]],[]]]]");
-            test(R"([[[1,[[[],[["string"]]]],[]],["string \"quotes\""]],null])");
+            test(R"([[[1,[[[],[["string\n"]]]],[]],["string \"quotes\""]],null])");
 
             section("object of literals");
-            test(R"({"a":"string"})");
+            test(R"({"a":"string\n"})");
+            test(R"({"\n":"string\r"})");
             test(R"({"a":"string \"quotes\""})");
             test(R"({"a":1})");
             test(R"({"a":1.23})");

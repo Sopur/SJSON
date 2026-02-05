@@ -11,8 +11,8 @@ namespace SJSON {
     typedef std::move_only_function<void(const JSValue& value)> JSONCallback;
 
     class JSPath {
-    private:
-        bool drop_generics = false;
+    protected:
+        bool drop_generics;
         VectorStack<std::string> parts;
         std::unordered_map<std::string, JSONCallback> listeners;
 
@@ -37,16 +37,11 @@ namespace SJSON {
         inline JSPath(bool drop_generics):
             drop_generics(drop_generics),
             parts({"JSON"}) {} // This is only here to match with the references stack
-        inline ~JSPath() = default;
+        ~JSPath() = default;
 
-        inline constexpr void push(const std::string& part) {
-            parts.push(part);
-        }
-        inline void push(size_t part) {
-            parts.push(std::to_string(part));
-        }
-        // Not constexpr cuz it has an overload that isn't constexpr
-        inline bool pop() {
+        inline constexpr void push(std::string part) { parts.push(std::move(part)); }
+        inline void push(size_t part) { parts.push(std::to_string(part)); }
+        inline constexpr bool pop() {
             parts.pop();
             return false;
         }
@@ -70,7 +65,7 @@ namespace SJSON {
                         else
                             out += "[" + part + "]";
                     } else {
-                        out += "[" + escape(part) + "]";
+                        out += "[" + jsstring_escape(part) + "]";
                     }
                 } else {
                     if (i != 1) out += ".";
@@ -79,21 +74,17 @@ namespace SJSON {
             }
             return out;
         }
-        inline void listen(const std::string& path, JSONCallback&& cb) {
+        inline void listen(std::string path, JSONCallback&& cb) {
             if (listeners.contains(path)) return; // Disallow multiple listeners per path
-            listeners[path] = std::move(cb);
+            listeners[std::move(path)] = std::move(cb);
         }
         inline bool call(const JSValue& value) {
             if (!listeners.size()) return false;
             if (call_if(to_string(false), value)) return false;
             return call_if(to_string(true), value) && drop_generics; // Only drop generics to stop drop loops
         }
-        inline constexpr std::string& operator[](size_t i) {
-            return parts[i];
-        }
-        inline constexpr const std::string& operator[](size_t i) const {
-            return parts[i];
-        }
+        inline constexpr std::string& operator[](size_t i) { return parts[i]; }
+        inline constexpr const std::string& operator[](size_t i) const { return parts[i]; }
         // Not used but useful
         inline constexpr bool operator==(const JSPath& a) const {
             if (length() != a.length()) return false;

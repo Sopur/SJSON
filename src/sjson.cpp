@@ -22,10 +22,10 @@ namespace SJSON {
         return references.prev()->type() == type;
     }
     // Reset read state
-    void Parse::use_chunk(const std::string& src) {
+    void Parse::use_chunk(std::string src) {
         if (readable()) throw sjson_internal_parse_error::new_chunk_before_finish();
         i = 0;
-        chunk = src;
+        chunk = std::move(src);
     }
     // Copy and reset for a new streamed token
     Token Parse::mk_token() {
@@ -50,8 +50,8 @@ namespace SJSON {
         // If the current token is unfinished
         return Token();
     }
-    void Parse::parse_chunk(const std::string& src) {
-        use_chunk(src);
+    void Parse::parse_chunk(std::string src) {
+        use_chunk(std::move(src));
         while (true) {
             auto token = read_token();
             if (token.is_unresolved()) {
@@ -190,27 +190,27 @@ namespace SJSON {
         istream(std::move(src)),
         references({&value}),
         path(drop_generics) {}
-    Parse::Parse(const std::string& src):
+    Parse::Parse(std::string src):
         istream([]() -> std::string {
             return ""; // Predefined parse, no stream needed
         }),
         references({&value}),
         path(false) {
-        parse_chunk(src);
+        parse_chunk(std::move(src));
         parse_chunk(""); // Simulate end of stream
     }
 
     // Data parsing
-    JSValue Parse::string(const std::string& src) {
-        return Parse(src).value;
+    JSValue Parse::string(std::string src) {
+        return Parse(std::move(src)).value;
     }
     JSValue Parse::stream(JSONStream&& src) {
         Parse json(std::move(src));
         json.all();
         return json.value;
     }
-    Parse& Parse::listen(const std::string& label, JSONCallback&& cb) {
-        path.listen(label, std::move(cb));
+    Parse& Parse::listen(std::string label, JSONCallback&& cb) {
+        path.listen(std::move(label), std::move(cb));
         return *this;
     }
     bool Parse::next() {

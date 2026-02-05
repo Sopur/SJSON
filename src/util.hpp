@@ -3,24 +3,47 @@
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
-#include <iomanip>
+#include <format>
 #include <sstream>
 #include <string>
 #include <vector>
 
 namespace SJSON {
-    inline std::string escape(const std::string& str) {
-        std::ostringstream ss;
-        ss << std::quoted(str);
-        return ss.str();
+    inline std::string jschar_escape(char c) {
+        // If a escape sequence is needed for ts char
+        for (const auto& [k, v] : escape_map)
+            if (v == c) return std::string {'\\', k};
+        // If this char is displayable
+        if (c >= 32 && c <= 126) return std::string {c};
+        return ""; // Can't escape cuz this char needs a multiescape
     }
-    inline std::string unescape(const std::string& str) {
-        std::string output;
-        std::stringstream ss;
-        ss << str;
-        ss >> std::quoted(output);
-        return output;
+    inline std::string jschar_multiescape(char a, char b) {
+        return std::format("\\u{:02x}{:02x}", static_cast<uint8_t>(a), static_cast<uint8_t>(b));
     }
+    inline std::string jschar_multiescape(char b) {
+        return jschar_multiescape(0, b);
+    }
+    inline std::string jsstring_escape(const std::string& src) {
+        std::string out = "\"";
+        for (size_t i = 0; i < src.size();) {
+            if (auto esc = jschar_escape(src[i]); esc.size()) {
+                // If single char escape
+                out += esc;
+                i++;
+            } else if (i + 1 == src.size()) {
+                // If single char multiescape
+                out += jschar_multiescape(src[i]);
+                i++;
+            } else {
+                // if normal multiescape
+                out += jschar_multiescape(src[i], src[i + 1]);
+                i += 2;
+            }
+        }
+        out += "\"";
+        return out;
+    }
+
     // This way unnecessary 0's aren't added
     inline std::string num_to_string(double x) {
         std::ostringstream oss;
@@ -33,15 +56,15 @@ namespace SJSON {
         return ec == std::errc() && ptr == src.data() + src.size();
     }
     inline bool is_valid_integer(const std::string& src, int base = 10) {
-        uint32_t value;
+        uint64_t value;
         auto [ptr, ec] = std::from_chars(src.data(), src.data() + src.size(), value, base);
         return ec == std::errc() && ptr == src.data() + src.size();
     }
 
     inline std::string hexToUTF8(const std::string_view& hex) {
-        uint32_t value;
+        uint16_t value;
         std::from_chars(hex.data(), hex.data() + hex.size(), value, 16);
-        return std::string(reinterpret_cast<char*>(&value), 1);
+        return std::string(reinterpret_cast<char*>(&value), 2);
     }
 
     /*
@@ -50,17 +73,17 @@ namespace SJSON {
     */
     template <typename T>
     class VectorStack {
-    private:
+    protected:
         std::vector<T> vec;
 
     public:
-        inline constexpr VectorStack() = default;
-        inline constexpr VectorStack(const std::vector<T>& vec):
-            vec(vec) {}
-        inline constexpr ~VectorStack() = default;
+        VectorStack() = default;
+        inline constexpr VectorStack(std::vector<T> vec):
+            vec(std::move(vec)) {}
+        ~VectorStack() = default;
 
-        inline constexpr void push(const T& v) {
-            vec.push_back(v);
+        inline constexpr void push(T v) {
+            vec.push_back(std::move(v));
         }
         inline constexpr void pop() {
             if (empty()) throw sjson_internal_parse_error::vector_stack("Call to pop() while empty");
