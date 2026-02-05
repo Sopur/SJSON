@@ -10,7 +10,7 @@
 
 namespace SJSON {
     inline std::string jschar_escape(char c) {
-        // If a escape sequence is needed for ts char
+        // If an escape sequence is needed for ts char
         for (const auto& [k, v] : escape_map)
             if (v == c) return std::string {'\\', k};
         // If this char is displayable
@@ -35,7 +35,7 @@ namespace SJSON {
                 out += jschar_multiescape(src[i]);
                 i++;
             } else {
-                // if normal multiescape
+                // If multiescape
                 out += jschar_multiescape(src[i], src[i + 1]);
                 i += 2;
             }
@@ -61,7 +61,7 @@ namespace SJSON {
         return ec == std::errc() && ptr == src.data() + src.size();
     }
 
-    inline std::string hexToUTF8(const std::string_view& hex) {
+    inline std::string hex_to_UTF8(const std::string_view& hex) {
         uint16_t value;
         std::from_chars(hex.data(), hex.data() + hex.size(), value, 16);
         return std::string(reinterpret_cast<char*>(&value), 2);

@@ -77,7 +77,7 @@ namespace SJSON {
                         if (escape_sequence.size() != sequence_escape_len) return;
                         if (!is_valid_integer(escape_sequence, 16))
                             throw sjson_parse_error::invalid_escape(escape_sequence);
-                        src += hexToUTF8(escape_sequence);
+                        src += hex_to_UTF8(escape_sequence);
                         escape_state = EscapeState::None;
                         escape_sequence = "";
                         return;
