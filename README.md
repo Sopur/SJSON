@@ -6,33 +6,33 @@
 
 ### 1. JSON Stream Parser
 
--   Parses JSON sent in **individual chunks**.
--   Use this to **avoid storing a massive string then spending lots of time parsing it** all at once.
--   This **saves memory** because you will no longer have to **store the entire JSON string; only the individual chunks** need to be in memory at any given time.
+- Parses JSON sent in **individual chunks**.
+- Use this to **avoid storing a massive string then spending lots of time parsing it** all at once.
+- This **saves memory** because you will no longer have to **store the entire JSON string; only the individual chunks** need to be in memory at any given time.
 
 ### 2. Memory Optimized
 
--   This JSON parser **prioritizes minimizing memory usage**.
--   The parser is **non-recursive** and **discards unneeded tokens/syntax** to save memory.
--   This parser is perfect for **dealing with massive amounts of data** at a single time, or for **low-spec machines**.
+- This JSON parser **prioritizes minimizing memory usage**.
+- The parser is **non-recursive** and **discards unneeded tokens/syntax** to save memory.
+- This parser is perfect for **dealing with massive amounts of data** at a single time, or for **low-spec machines**.
 
 ### 3. Stream Listeners & Data Discarding
 
--   This JSON parser supports using **listeners** to run a callback **for specific values, properties, or indexes** after that specific value has been **fully parsed**.
--   The parser supports **listening generically**, allowing a callback to run, for example, on every element of an array.
--   The parser supports **deallocating/dropping values** sent to **generic listeners**, allowing you to have only **one value** of (for example an array) **stored at a time** during parse. This can **massively save memory and increase performance** on JSON that contains massive arrays.
+- This JSON parser supports using **listeners** to run a callback **for specific values, properties, or indexes** after that specific value has been **fully parsed**.
+- The parser supports **listening generically**, allowing a callback to run, for example, on every element of an array.
+- The parser supports **deallocating/dropping values** sent to **generic listeners**, allowing you to have only **one value** of (for example an array) **stored at a time** during parse. This can **massively save memory and increase performance** on JSON that contains massive arrays.
 
 ### 4. Malformed Syntax & Error Recovery
 
--   This parser can **parse JSON with extremely minimal** (and technically invalid) **syntax** due to the **discarding of unneeded tokens**. This allows you to **parse much smaller JSON strings/streams**.
--   **For example**, the parser will parse `{"a"1"b"2}` **as** `{"a": 1, "b": 2}`.
--   This parser supports **error recovery**, allowing you to **read data parsed before an unrecoverable syntax error** was encountered.
--   You may use **error recovery** to, for example, **parse JSON with no closing brackets** and still **parsing it perfectly**.
+- This parser can **parse JSON with extremely minimal** (and technically invalid) **syntax** due to the **discarding of unneeded tokens**. This allows you to **parse much smaller JSON strings/streams**.
+- **For example**, the parser will parse `{"a"1"b"2}` **as** `{"a": 1, "b": 2}`.
+- This parser supports **error recovery**, allowing you to **read data parsed before an unrecoverable syntax error** was encountered.
+- You may use **error recovery** to, for example, **parse JSON with no closing brackets** and still **parsing it perfectly**.
 
 ### 5. Regular JSON Parsing
 
--   This parser also supports **all of the above** with **normal strings**, so you may have **all the benefits without using a stream**.
--   This parser is fully RFC4627 compliant, aside from syntax auto-correction (https://www.rfc-editor.org/rfc/rfc4627.html)
+- This parser also supports **all of the above** with **normal strings**, so you may have **all the benefits without using a stream**.
+- This parser is fully RFC4627 compliant, aside from syntax auto-correction (https://www.rfc-editor.org/rfc/rfc4627.html)
 
 ## Examples
 
@@ -137,59 +137,59 @@ int main() {
 
 ### Types
 
--   `typedef std::move_only_function<void(const JSValue& value)> JSONCallback`
--   `typedef std::move_only_function<std::string()> JSONStream`
--   `typedef std::monostate JSNull`
--   `typedef double JSNumber`
--   `typedef bool JSBoolean`
--   `typedef std::string JSString`
--   `typedef std::map<std::string, JSValue> JSObject`
--   `typedef std::vector<JSValue> JSArray`
--   `using JSValueData = std::variant<JSNull, JSNumber, JSBoolean, JSString, JSObject, JSArray>`
+- `typedef std::move_only_function<void(const JSValue& value)> JSONCallback`
+- `typedef std::move_only_function<std::string()> JSONStream`
+- `typedef std::monostate JSNull`
+- `typedef double JSNumber`
+- `typedef bool JSBoolean`
+- `typedef std::string JSString`
+- `typedef std::map<std::string, JSValue> JSObject`
+- `typedef std::vector<JSValue> JSArray`
+- `using JSValueData = std::variant<JSNull, JSNumber, JSBoolean, JSString, JSObject, JSArray>`
 
 ### `SJSON::Parse`
 
--   `Parse(JSONStream&& src, bool drop_generics = false)`
--   `Parse(const std::string& src)`
--   `static JSValue string(const std::string& src)`
--   `static JSValue stream(JSONStream&& src)`
--   `Parse& listen(const std::string& label, JSONCallback&& cb)`
--   `bool next()`
--   `void all()`
--   `std::string to_string(int index_length = 0) const`
+- `Parse(JSONStream&& src, bool drop_generics = false)`
+- `Parse(std::string src)`
+- `static JSValue string(std::string src)`
+- `static JSValue stream(JSONStream&& src)`
+- `Parse& listen(std::string label, JSONCallback&& cb)`
+- `bool next()`
+- `void all()`
+- `std::string to_string(int index_length = 0) const`
 
 ### `SJSON::JSValue`
 
--   `JSValue() = default`
--   `JSValue(JSNull v)`
--   `JSValue(JSNumber v)`
--   `JSValue(int v)`
--   `JSValue(long v)`
--   `JSValue(unsigned long v)`
--   `JSValue(JSBoolean v)`
--   `JSValue(const JSString& v)`
--   `JSValue(const std::string_view& v)`
--   `JSValue(const char* v)`
--   `JSValue(const JSObject& v)`
--   `JSValue(const JSArray& v)`
--   `JSValueType type() const`
--   `const char* type_str() const noexcept`
--   `bool is_null() const noexcept`
--   `bool is_number() const noexcept`
--   `bool is_boolean() const noexcept`
--   `bool is_string() const noexcept`
--   `bool is_object() const noexcept`
--   `bool is_array() const noexcept`
--   `std::string to_string(int index_length = 0, int index = 1) const`
--   `JSNull& null()`
--   `JSNumber& number()`
--   `JSBoolean& boolean()`
--   `JSString& string()`
--   `JSObject& object()`
--   `JSArray& array()`
--   `const JSNull& null() const`
--   `const JSNumber& number() const`
--   `const JSBoolean& boolean() const`
--   `const JSString& string() const`
--   `const JSObject& object() const`
--   `const JSArray& array() const`
+- `JSValue() = default`
+- `JSValue(JSNull v)`
+- `JSValue(JSNumber v)`
+- `JSValue(int v)`
+- `JSValue(long v)`
+- `JSValue(unsigned long v)`
+- `JSValue(JSBoolean v)`
+- `JSValue(JSString v)`
+- `JSValue(std::string_view v)`
+- `JSValue(const char* v)`
+- `JSValue(JSObject v)`
+- `JSValue(JSArray v)`
+- `JSValueType type() const`
+- `const char* type_str() const noexcept`
+- `bool is_null() const noexcept`
+- `bool is_number() const noexcept`
+- `bool is_boolean() const noexcept`
+- `bool is_string() const noexcept`
+- `bool is_object() const noexcept`
+- `bool is_array() const noexcept`
+- `std::string to_string(int index_length = 0, int index = 1) const`
+- `JSNull& null()`
+- `JSNumber& number()`
+- `JSBoolean& boolean()`
+- `JSString& string()`
+- `JSObject& object()`
+- `JSArray& array()`
+- `const JSNull& null() const`
+- `const JSNumber& number() const`
+- `const JSBoolean& boolean() const`
+- `const JSString& string() const`
+- `const JSObject& object() const`
+- `const JSArray& array() const`
