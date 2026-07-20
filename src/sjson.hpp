@@ -31,8 +31,9 @@ namespace SJSON {
     public:
         JSValue value;
 
-        Parse(JSONStream&& src, bool drop_generics = false);
-        Parse(std::string src);
+        Parse(bool drop_generics = false);                   // Receive streams
+        Parse(JSONStream&& src, bool drop_generics = false); // Input streams
+        Parse(std::string src);                              // No stream
         Parse(const Parse&) = delete;
         Parse& operator=(const Parse&) = delete;
         Parse(Parse&&) noexcept = default;
@@ -43,6 +44,7 @@ namespace SJSON {
         static JSValue string(std::string src);
         static JSValue stream(JSONStream&& src);
         Parse& listen(std::string label, JSONCallback&& cb);
+        bool recv(std::string chunk);
         bool next();
         void all();
 

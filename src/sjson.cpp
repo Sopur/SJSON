@@ -6,6 +6,12 @@
 #include <string>
 
 namespace SJSON {
+    static JSONStream nullstream() {
+        return []() -> std::string {
+            return "";
+        };
+    }
+
     // End of file if stream returns an empty string
     bool Parse::is_eof() const noexcept {
         return chunk.size() == 0;
@@ -186,14 +192,16 @@ namespace SJSON {
         }
     }
 
+    Parse::Parse(bool drop_generics):
+        istream(nullstream()),
+        references({&value}),
+        path(drop_generics) {}
     Parse::Parse(JSONStream&& src, bool drop_generics):
         istream(std::move(src)),
         references({&value}),
         path(drop_generics) {}
     Parse::Parse(std::string src):
-        istream([]() -> std::string {
-            return ""; // Predefined parse, no stream needed
-        }),
+        istream(nullstream()),
         references({&value}),
         path(false) {
         parse_chunk(std::move(src));
@@ -213,9 +221,12 @@ namespace SJSON {
         path.listen(std::move(label), std::move(cb));
         return *this;
     }
-    bool Parse::next() {
-        parse_chunk(istream()); // Parse stream even if eof
+    bool Parse::recv(std::string chunk) {
+        parse_chunk(std::move(chunk));
         return !is_eof();
+    }
+    bool Parse::next() {
+        return recv(istream()); // Parse stream even if eof
     }
     void Parse::all() {
         while (next());

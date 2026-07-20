@@ -56,6 +56,44 @@ int main() {
 }
 ```
 
+### Chunk parsing
+
+```cpp
+// examples/recv.cpp
+#include "../src/sjson.hpp"
+#include "util.hpp"
+
+int main() {
+    SJSON::Parse stream; // Define parser with no initial input
+
+    // Send chunk 1
+    stream.recv(R"(
+        [
+            1,
+            2,
+    )");
+
+    // Result should be of value `[1,2]`
+    std::cout << "Value after chunk 1 is: " << stream.to_string() << '\n';
+
+    // Interact with what's been received so far
+    if (stream.value.is_array())
+        stream.value.array().push_back(3);
+
+    // Send chunk 2
+    stream.recv(R"(
+            4,
+            5
+        ]
+    )");
+
+    // Result should be of value `[1,2,3,4,5]`
+    std::cout << "Value after chunk 2 is: " << stream.to_string() << '\n';
+    return 0;
+}
+
+```
+
 ### String Parsing
 
 ```cpp
@@ -149,11 +187,13 @@ int main() {
 
 ### `SJSON::Parse`
 
+- `Parse(bool drop_generics = false)`
 - `Parse(JSONStream&& src, bool drop_generics = false)`
 - `Parse(std::string src)`
 - `static JSValue string(std::string src)`
 - `static JSValue stream(JSONStream&& src)`
 - `Parse& listen(std::string label, JSONCallback&& cb)`
+- `bool recv(std::string chunk)`
 - `bool next()`
 - `void all()`
 - `std::string to_string(int index_length = 0) const`

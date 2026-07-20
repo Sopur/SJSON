@@ -53,7 +53,13 @@ obj/sjson_0$(obj_ext): src/sjson.cpp .polybuild.mk src/sjson.hpp src/listener.hp
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-objects :=  obj/token_0$(obj_ext) obj/value_0$(obj_ext) obj/sjson_0$(obj_ext)
+obj/test_0$(obj_ext): ./test.cpp .polybuild.mk ././src/test.hpp ././src/sjson.hpp ././src/listener.hpp ././src/syntax.hpp ././src/util.hpp ././src/value.hpp ././src/token.hpp
+	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
+	@mkdir -p obj
+	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
+	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
+
+objects :=  obj/token_0$(obj_ext) obj/value_0$(obj_ext) obj/sjson_0$(obj_ext) obj/test_0$(obj_ext)
 a.out$(out_ext): .polybuild.mk $(objects) $(static_libraries)
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Building $@..."
 	@"$(cpp_compiler)" $(objects) $(static_libraries) $(cpp_compilation_flags) $(out_path_flag)$@ $(link_flag) $(link_time_flags) $(libraries)
