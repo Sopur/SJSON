@@ -1,7 +1,9 @@
 #pragma once
 #include "syntax.hpp"
+#include "utf8.hpp"
 #include "util.hpp"
 #include "value.hpp"
+#include <cstddef>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -23,7 +25,7 @@ namespace SJSON {
             return false;
         }
         inline static bool is_index(const std::string& part) {
-            return is_valid_integer(part);
+            return is_valid_number<size_t>(part);
         }
         inline bool call_if(const std::string& key, const JSValue& value) {
             if (listeners.contains(key)) {
@@ -37,7 +39,6 @@ namespace SJSON {
         inline JSPath(bool drop_generics):
             drop_generics(drop_generics),
             parts({"JSON"}) {} // This is only here to match with the references stack
-        ~JSPath() = default;
 
         inline constexpr void push(std::string part) { parts.push(std::move(part)); }
         inline void push(size_t part) { parts.push(std::to_string(part)); }

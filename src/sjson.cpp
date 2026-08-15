@@ -59,6 +59,8 @@ namespace SJSON {
     void Parse::parse_chunk(std::string src) {
         use_chunk(std::move(src));
         while (true) {
+            if (references.size() > opts.nested_object_limit)
+                throw sjson_parse_error::max_nested();
             auto token = read_token();
             if (token.is_unresolved()) {
                 if (is_eof() && !is_finished())
@@ -192,15 +194,18 @@ namespace SJSON {
         }
     }
 
-    Parse::Parse(bool drop_generics):
+    Parse::Parse(ParseOpts opts):
+        opts(std::move(opts)),
         istream(nullstream()),
         references({&value}),
-        path(drop_generics) {}
-    Parse::Parse(JSONStream&& src, bool drop_generics):
+        path(opts.drop_generics) {}
+    Parse::Parse(JSONStream&& src, ParseOpts opts):
+        opts(std::move(opts)),
         istream(std::move(src)),
         references({&value}),
-        path(drop_generics) {}
-    Parse::Parse(std::string src):
+        path(opts.drop_generics) {}
+    Parse::Parse(std::string src, ParseOpts opts):
+        opts(std::move(opts)),
         istream(nullstream()),
         references({&value}),
         path(false) {
@@ -209,11 +214,11 @@ namespace SJSON {
     }
 
     // Data parsing
-    JSValue Parse::string(std::string src) {
-        return Parse(std::move(src)).value;
+    JSValue Parse::string(std::string src, ParseOpts opts) {
+        return Parse(std::move(src), std::move(opts)).value;
     }
-    JSValue Parse::stream(JSONStream&& src) {
-        Parse json(std::move(src));
+    JSValue Parse::stream(JSONStream&& src, ParseOpts opts) {
+        Parse json(std::move(src), std::move(opts));
         json.all();
         return json.value;
     }

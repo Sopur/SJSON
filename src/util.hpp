@@ -4,67 +4,57 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <iomanip>
+#include <ios>
+#include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace SJSON {
-    inline std::string jschar_escape(char c) {
-        // If an escape sequence is needed for ts char
-        for (const auto& [k, v] : escape_map)
-            if (v == c) return std::string {'\\', k};
-        // If this char is displayable
-        if (c >= 32 && c <= 126) return std::string {c};
-        return ""; // Can't escape cuz this char needs a multiescape
-    }
-    inline std::string jschar_multiescape(char a, char b) {
-        return std::format("\\u{:02x}{:02x}", static_cast<uint8_t>(a), static_cast<uint8_t>(b));
-    }
-    inline std::string jschar_multiescape(char b) {
-        return jschar_multiescape(0, b);
-    }
-    inline std::string jsstring_escape(const std::string& src) {
-        std::string out = "\"";
-        for (size_t i = 0; i < src.size();) {
-            if (auto esc = jschar_escape(src[i]); esc.size()) {
-                // If single char escape
-                out += esc;
-                i++;
-            } else if (i + 1 == src.size()) {
-                // If single char multiescape
-                out += jschar_multiescape(src[i]);
-                i++;
-            } else {
-                // If multiescape
-                out += jschar_multiescape(src[i], src[i + 1]);
-                i += 2;
-            }
-        }
-        out += "\"";
-        return out;
-    }
-
-    // This way unnecessary 0's aren't added
-    inline std::string num_to_string(double x) {
+    // Needed cuz default behavior is locale sensitive and low precision
+    template <typename T>
+    inline std::string num_to_string(T x) {
         std::ostringstream oss;
-        oss << x;
+        oss.imbue(std::locale::classic());
+        oss << std::setprecision(std::numeric_limits<T>::max_digits10 - 1) << x;
         return oss.str();
     }
-    inline bool is_valid_number(const std::string& src) {
-        double value;
-        auto [ptr, ec] = std::from_chars(src.data(), src.data() + src.size(), value);
-        return ec == std::errc() && ptr == src.data() + src.size();
-    }
-    inline bool is_valid_integer(const std::string& src, int base = 10) {
-        uint64_t value;
-        auto [ptr, ec] = std::from_chars(src.data(), src.data() + src.size(), value, base);
-        return ec == std::errc() && ptr == src.data() + src.size();
+    template <typename T, int Base = 10>
+    inline T string_to_num(const std::string& src) {
+        T value;
+        if constexpr (std::is_floating_point_v<T>) {
+            static_assert(Base == 10, "float not base 10");
+            std::from_chars(src.data(), src.data() + src.size(), value);
+        } else {
+            std::from_chars(src.data(), src.data() + src.size(), value, Base);
+        }
+        return value;
     }
 
-    inline std::string hex_to_UTF8(const std::string_view& hex) {
-        uint16_t value;
-        std::from_chars(hex.data(), hex.data() + hex.size(), value, 16);
-        return std::string(reinterpret_cast<char*>(&value), 2);
+    inline bool is_valid_number(const std::string& src, const std::from_chars_result& res) {
+        return res.ec == std::errc() && res.ptr == src.data() + src.size();
+    }
+    template <typename T, int Base = 10>
+    inline bool is_valid_number(const std::string& src) {
+        T value;
+        if constexpr (std::is_floating_point_v<T>) {
+            static_assert(Base == 10, "float not base 10");
+            return is_valid_number(src, std::from_chars(src.data(), src.data() + src.size(), value));
+        } else {
+            return is_valid_number(src, std::from_chars(src.data(), src.data() + src.size(), value, Base));
+        }
+    }
+
+    inline std::string hex_to_utf8(const std::string_view& hex) {
+        if (hex.size() % 2 != 0) throw std::out_of_range("hex not divisible by 2");
+        std::string out;
+        for (size_t i = 0; i < hex.size(); i += 2) {
+            out.push_back(string_to_num<char, 16>(std::string {hex[i], hex[i + 1]}));
+        }
+        return out;
     }
 
     /*

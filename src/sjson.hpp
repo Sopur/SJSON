@@ -10,8 +10,13 @@
 namespace SJSON {
     typedef std::move_only_function<std::string()> JSONStream;
 
+    struct ParseOpts {
+        bool drop_generics = false;      // Drop values when called in generic listeners?
+        size_t nested_object_limit = 80; // Max level for nested objects (default=80 like Google Cloud Spanner)
+    };
     class Parse {
     protected:
+        ParseOpts opts;
         JSONStream istream;
         VectorStack<JSValue*> references;
         JSPath path;
@@ -31,9 +36,9 @@ namespace SJSON {
     public:
         JSValue value;
 
-        Parse(bool drop_generics = false);                   // Receive streams
-        Parse(JSONStream&& src, bool drop_generics = false); // Input streams
-        Parse(std::string src);                              // No stream
+        Parse(ParseOpts opts = {});                   // Receive streams
+        Parse(JSONStream&& src, ParseOpts opts = {}); // Input streams
+        Parse(std::string src, ParseOpts opts = {});  // No stream
         Parse(const Parse&) = delete;
         Parse& operator=(const Parse&) = delete;
         Parse(Parse&&) noexcept = default;
@@ -41,8 +46,8 @@ namespace SJSON {
         ~Parse() = default;
 
         // Data parsing
-        static JSValue string(std::string src);
-        static JSValue stream(JSONStream&& src);
+        static JSValue string(std::string src, ParseOpts opts = {});
+        static JSValue stream(JSONStream&& src, ParseOpts opts = {});
         Parse& listen(std::string label, JSONCallback&& cb);
         bool recv(std::string chunk);
         bool next();

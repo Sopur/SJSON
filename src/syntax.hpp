@@ -31,6 +31,9 @@ namespace SJSON {
         inline static sjson_parse_error schema_mismatch() {
             return sjson_parse_error("Input doesn't match the schema");
         }
+        inline static sjson_parse_error max_nested() {
+            return sjson_parse_error("Nested object limit exceeded");
+        }
     };
     class sjson_internal_parse_error : public std::runtime_error {
     public:
@@ -109,6 +112,7 @@ namespace SJSON {
     inline const std::unordered_set<char> special_numbers_set {
         '.',
         'e',
+        'E',
         '+',
     };
 
@@ -187,7 +191,7 @@ namespace SJSON {
     inline constexpr char escape_char = '\\';
     inline constexpr char sequence_escape_char = 'u'; // Follows the format uXXXX -> U+XXXX
     inline constexpr int sequence_escape_len = 4;
-    inline const std::unordered_map<char, char> escape_map {
+    inline const std::unordered_map<char, char> jsescape_map {
         {'"', '"'},
         {'\\', '\\'},
         {'/', '/'},

@@ -1,6 +1,8 @@
 #include "token.hpp"
 #include "syntax.hpp"
 #include "util.hpp"
+#include "value.hpp"
+#include <cstdint>
 
 namespace SJSON {
     Token::Token() {
@@ -67,7 +69,7 @@ namespace SJSON {
                         if (c == sequence_escape_char) {
                             escape_state = EscapeState::Sequence;
                         } else {
-                            src += escape_map.contains(c) ? escape_map.at(c) : c;
+                            src += jsescape_map.contains(c) ? jsescape_map.at(c) : c;
                             escape_state = EscapeState::None;
                         }
                         return;
@@ -75,9 +77,9 @@ namespace SJSON {
                     case EscapeState::Sequence: {
                         escape_sequence += c;
                         if (escape_sequence.size() != sequence_escape_len) return;
-                        if (!is_valid_integer(escape_sequence, 16))
+                        if (!is_valid_number<uint16_t, 16>(escape_sequence))
                             throw sjson_parse_error::invalid_escape(escape_sequence);
-                        src += hex_to_UTF8(escape_sequence);
+                        src += hex_to_utf8(escape_sequence);
                         escape_state = EscapeState::None;
                         escape_sequence = "";
                         return;
@@ -126,9 +128,9 @@ namespace SJSON {
         return keyword_map.at(src);
     }
     JSNumber Token::to_number() const {
-        if (!is_valid_number(src))
+        if (!is_valid_number<JSNumber>(src))
             throw sjson_parse_error::invalid_token("number", src);
-        return std::stod(src);
+        return string_to_num<JSNumber>(src);
     }
     JSString Token::to_string() const {
         if (escape_state != EscapeState::End)

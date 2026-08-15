@@ -1,18 +1,23 @@
 #pragma once
+#include <concepts>
 #include <map>
 #include <ostream>
 #include <string>
-#include <string_view>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
 namespace SJSON {
     class JSValue;
     typedef std::monostate JSNull;
-    typedef double JSNumber;
+#ifdef SJSON_LONG_DOUBLE
+    typedef long double JSNumber;
+#else
+    typedef double JSNumber; // Spec notes that double/float64 is a common default for numbers in JSON parsers
+#endif
     typedef bool JSBoolean;
     typedef std::string JSString;
-    typedef std::map<std::string, JSValue> JSObject; // Ordering is important for JavaScript for some reason
+    typedef std::map<std::string, JSValue> JSObject;
     typedef std::vector<JSValue> JSArray;
     using JSValueData = std::variant<
         JSNull,
@@ -37,16 +42,19 @@ namespace SJSON {
 
     public:
         JSValue() = default;
-        // Auto conversion bullshit
-        JSValue(JSNull v);
-        JSValue(JSNumber v);
-        JSValue(int v);
-        JSValue(long v);
-        JSValue(unsigned long v);
+        /* Auto conversion bullshit */
+        JSValue(JSNull);
+        // For all diff types of numbers (int, float, size_t)
+        template <typename T>
+            requires(std::is_integral_v<T> || std::is_floating_point_v<T>)
+        inline JSValue(T v):
+            src(static_cast<JSNumber>(v)) {}
         JSValue(JSBoolean v);
-        JSValue(JSString v);
-        JSValue(std::string_view v);
-        JSValue(const char* v);
+        // For all diff types of strings (string, const char*, string_view)
+        template <typename T>
+            requires(std::constructible_from<JSString, T &&>)
+        inline JSValue(T v):
+            src(JSString(std::move(v))) {}
         JSValue(JSObject v);
         JSValue(JSArray v);
         ~JSValue() = default;

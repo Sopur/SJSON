@@ -1,30 +1,15 @@
 #include "value.hpp"
+#include "utf8.hpp"
 #include "util.hpp"
 #include <sstream>
 #include <string>
-#include <string_view>
 #include <variant>
 
 namespace SJSON {
-    JSValue::JSValue(JSNull v):
-        SJSON::JSValue() {} // Call default constructor instead
-    JSValue::JSValue(JSNumber v):
-        src(v) {}
-    // Fix constructor issues for integral constants
-    JSValue::JSValue(int v):
-        src(JSNumber(v)) {}
-    JSValue::JSValue(long v):
-        src(JSNumber(v)) {}
-    JSValue::JSValue(unsigned long v):
-        src(JSNumber(v)) {}
+    JSValue::JSValue(JSNull):
+        SJSON::JSValue() {} // JSNull is equivinet to default construct
     JSValue::JSValue(JSBoolean v):
         src(v) {}
-    JSValue::JSValue(JSString v):
-        src(std::move(v)) {}
-    JSValue::JSValue(std::string_view v):
-        src(JSString(std::move(v))) {}
-    JSValue::JSValue(const char* v):
-        src(JSString(v)) {}
     JSValue::JSValue(JSObject v):
         src(std::move(v)) {}
     JSValue::JSValue(JSArray v):

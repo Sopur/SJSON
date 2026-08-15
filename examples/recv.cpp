@@ -16,18 +16,14 @@ int main() {
     // Result should be of value `[1,2]` because that is all that has been received
     std::cout << "Value after chunk 1 is: " << stream.to_string() << '\n';
 
-    // You may optionally interact with the parsed data during parsing
-    if (stream.value.is_array())
-        stream.value.array().push_back(3);
-
-    // Send a 2nd chunk to the stream after manually modifying the JSON
+    // Send a 2nd chunk to the stream
     stream.recv(R"(
-            4,
-            5
+            3,
+            4
         ]
     )");
 
-    // Result should be of value `[1,2,3,4,5]` because a `3` was pushed before the 2nd chunk was received
+    // Result should be of value `[1,2,3,4]`
     std::cout << "Value after chunk 2 is: " << stream.to_string() << '\n';
     return 0;
 }

@@ -4,7 +4,7 @@
 
 int main() {
     // Define the stream; no parsing is done until told to
-    SJSON::Parse json(std::move(stream_example), true); // Boolean here tells the parser if it should drop values sent to generic listeners
+    SJSON::Parse json(std::move(stream_example), {.drop_generics = true}); // Drop values sent to generic listeners
     json
         .listen("test[]", [](const SJSON::JSValue& value) {
             std::cout << "Generic value in 'test': " << value.to_string(4) << '\n';

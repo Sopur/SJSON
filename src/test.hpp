@@ -36,7 +36,7 @@ namespace SJSON {
 
         inline std::string string(const std::string& src) const {
             // Simulate one character streams cuz it's the worse case scenario
-            Parse json([&src, i = 0]() mutable -> std::string {
+            Parse json([&src, i = 0ul]() mutable -> std::string {
                 if (i >= src.size()) return "";
                 return std::string {src[i++]};
             });
@@ -79,25 +79,38 @@ namespace SJSON {
 
         inline void run() {
             section("unstrict json");
-            test(R"("string\n")");
-            test(R"("string\uffff")");
-            test(R"("string \"quotes\"")");
+            test(R"("")");                           // Empty String
+            test(R"("string")");                     // String
+            test(R"("`string's \"quotes\"`")");      // String quotes
+            test(R"("\t\n\r")");                     // String escape shortcuts
+            test(R"("héllo")");                      // UTF8
+            test("\"\uabcdhjk\"");                   // UFT8
+            test("\"\u0001hjk\"", R"("\u0001hjk")"); // Unicode C0 escape
+            test("\"\u007Fhjk\"", R"("\u007Fhjk")"); // Unicode del
+            test("\"\u0080hjk\"", R"("\u0080hjk")"); // Unicode C1 escape
+
+            // Num no frac
             test("1");
             test("-1");
+            // Num w frac
             test("1.23");
             test("-1.23");
-            test("-1e+10");
-            test("1e10", "1e+10");
+            test("3.141592653589793");
+            test("-3.141592653589793");
+            // Scientific w +
+            test("1e+10", "10000000000");
+            test("-1E+10", "-10000000000");
+            // Scientific no +
+            test("1e10", "10000000000");
+            test("-1E10", "-10000000000");
+
+            // Keywords
             test("null");
             test("true");
             test("false");
 
-            section("empty values");
-            test(R"("")");
-            test("[]");
-            test("{}");
-
             section("array of literals");
+            test("[]");
             test(R"(["string\r"])");
             test(R"(["string","string \"quotes\"",""])");
             test("[1,2,3]");
@@ -108,7 +121,7 @@ namespace SJSON {
             test("[false]");
             test("[true,false]");
 
-            section("recursive arrays");
+            section("nested arrays");
             test("[[]]");
             test("[[],[]]");
             test(R"([1,[],""])");
@@ -128,7 +141,8 @@ namespace SJSON {
             test(R"({"a":1,"b":1.23,"c":"string","d":"string \"quotes\""})");
             test(R"({"a":1,"b":null,"c":true,"d":false})");
 
-            section("recursive objects");
+            section("nested objects");
+            test("{}");
             test(R"({"a":[]})");
             test(R"({"a":{}})");
             test(R"({"a":[],"b":{}})");
@@ -215,6 +229,11 @@ namespace SJSON {
             error(R"({"a":1,,"b":2})");
             error(R"({"a":1,  ,"b":2})");
 
+            section("misc errors");
+            error(std::string((ParseOpts {}).nested_object_limit + 1, '['));
+
+            // Not passing all error tests is not a bad thing
+            // Passing all parsing tests is required
             std::cout << "[RESULT] Passed " << (tests.parsing_passed + tests.errors_passed) << '/' << (tests.parsing_total + tests.errors_total) << " tests\n"
                       << "[RESULT] Passed " << tests.parsing_passed << '/' << tests.parsing_total << " parsing tests\n"
                       << "[RESULT] Passed " << tests.errors_passed << '/' << tests.errors_total << " errors tests\n"

@@ -5,18 +5,30 @@ library_path_flag := -L
 obj_path_flag := -o
 out_path_flag := -o
 library_flag := -l
-static_flag := -static
+release_dynamic_flag :=
+release_static_flag := -static
+debug_dynamic_flag :=
+debug_static_flag := -static
+debug_compilation_flag := -g
+debug_link_flag :=
 shared_flag := -shared -fPIC
 compile_only_flag := -c
+link_flag :=
+pkg_config_syntax :=
 obj_ext := .o
+out_ext :=
 ifeq ($(OS),Windows_NT)
 	include_path_flag := /I
 	library_path_flag := /LIBPATH:
 	obj_path_flag := /Fo:
 	out_path_flag := /Fe:
 	library_flag :=
-	dynamic_flag := /MD
-	static_flag := /MT
+	release_dynamic_flag := /MD
+	release_static_flag := /MT
+	debug_dynamic_flag := /MDd
+	debug_static_flag := /MTd
+	debug_compilation_flag := /Zi
+	debug_link_flag := /DEBUG
 	shared_flag := /LD
 	compile_only_flag := /c
 	link_flag := /link
@@ -25,44 +37,55 @@ ifeq ($(OS),Windows_NT)
 	out_ext := .exe
 endif
 
-c_compiler := $(CC)
-cpp_compiler := clang++
-c_compilation_flags := $(CFLAGS) $(dynamic_flag)
-cpp_compilation_flags := -Wall -O3 -std=c++23 $(dynamic_flag)
-link_time_flags := $(LDFLAGS)
+active_dynamic_flag := $(release_dynamic_flag)
+active_static_flag := $(release_static_flag)
+active_debug_compilation_flag :=
+active_debug_link_flag :=
+ifeq ($(MODE),debug)
+	active_debug_compilation_flag := $(debug_compilation_flag)
+	active_debug_link_flag := $(debug_link_flag)
+	active_dynamic_flag := $(debug_dynamic_flag)
+	active_static_flag := $(debug_static_flag)
+endif
+
+c_compiler := "$(CC)"
+cpp_compiler := "clang++"
+c_compilation_flags := $(CFLAGS) $(active_debug_compilation_flag) $(active_dynamic_flag)
+cpp_compilation_flags := -Wall -Wextra -O3 -std=c++23 $(active_debug_compilation_flag) $(active_dynamic_flag)
+link_time_flags := $(LDFLAGS) $(active_debug_link_flag)
 libraries :=
 
 all: a.out$(out_ext)
 .PHONY: all
 
+obj/sjson_0$(obj_ext): src/sjson.cpp .polybuild.mk src/sjson.hpp src/listener.hpp src/syntax.hpp src/utf8.hpp src/util.hpp src/value.hpp src/token.hpp
+	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
+	@mkdir -p obj
+	@$(cpp_compiler) $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
+	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
+
 obj/token_0$(obj_ext): src/token.cpp .polybuild.mk src/token.hpp src/syntax.hpp src/value.hpp src/util.hpp
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
-	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
+	@$(cpp_compiler) $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-obj/value_0$(obj_ext): src/value.cpp .polybuild.mk src/value.hpp src/util.hpp src/syntax.hpp
+obj/value_0$(obj_ext): src/value.cpp .polybuild.mk src/value.hpp src/utf8.hpp src/syntax.hpp src/util.hpp
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
-	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
+	@$(cpp_compiler) $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-obj/sjson_0$(obj_ext): src/sjson.cpp .polybuild.mk src/sjson.hpp src/listener.hpp src/syntax.hpp src/util.hpp src/value.hpp src/token.hpp
+obj/tests_0$(obj_ext): examples/tests.cpp .polybuild.mk examples/../src/test.hpp examples/../src/sjson.hpp examples/../src/listener.hpp examples/../src/syntax.hpp examples/../src/utf8.hpp examples/../src/util.hpp examples/../src/value.hpp examples/../src/token.hpp examples/util.hpp
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
-	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
+	@$(cpp_compiler) $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-obj/test_0$(obj_ext): ./test.cpp .polybuild.mk ././src/test.hpp ././src/sjson.hpp ././src/listener.hpp ././src/syntax.hpp ././src/util.hpp ././src/value.hpp ././src/token.hpp
-	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
-	@mkdir -p obj
-	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
-	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
-
-objects :=  obj/token_0$(obj_ext) obj/value_0$(obj_ext) obj/sjson_0$(obj_ext) obj/test_0$(obj_ext)
+objects :=  obj/sjson_0$(obj_ext) obj/token_0$(obj_ext) obj/value_0$(obj_ext) obj/tests_0$(obj_ext)
 a.out$(out_ext): .polybuild.mk $(objects) $(static_libraries)
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Building $@..."
-	@"$(cpp_compiler)" $(objects) $(static_libraries) $(cpp_compilation_flags) $(out_path_flag)$@ $(link_flag) $(link_time_flags) $(libraries)
+	@$(cpp_compiler) $(objects) $(static_libraries) $(cpp_compilation_flags) $(out_path_flag)$@ $(link_flag) $(link_time_flags) $(libraries)
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished building $@!"
 
 clean:

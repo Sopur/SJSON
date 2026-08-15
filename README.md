@@ -60,38 +60,34 @@ int main() {
 
 ```cpp
 // examples/recv.cpp
-#include "../src/sjson.hpp"
+#include "sjson.hpp"
 #include "util.hpp"
 
 int main() {
-    SJSON::Parse stream; // Define parser with no initial input
+    // Define parser with no inital input
+    SJSON::Parse stream;
 
-    // Send chunk 1
+    // Send 1 chunk worth of data; enough for the parser to create an array with 2 numbers
     stream.recv(R"(
         [
             1,
             2,
     )");
 
-    // Result should be of value `[1,2]`
+    // Result should be of value `[1,2]` because that is all that has been received
     std::cout << "Value after chunk 1 is: " << stream.to_string() << '\n';
 
-    // Interact with what's been received so far
-    if (stream.value.is_array())
-        stream.value.array().push_back(3);
-
-    // Send chunk 2
+    // Send a 2nd chunk to the stream
     stream.recv(R"(
-            4,
-            5
+            3,
+            4
         ]
     )");
 
-    // Result should be of value `[1,2,3,4,5]`
+    // Result should be of value `[1,2,3,4]`
     std::cout << "Value after chunk 2 is: " << stream.to_string() << '\n';
     return 0;
 }
-
 ```
 
 ### String Parsing
@@ -121,7 +117,7 @@ int main() {
 
 int main() {
     // Define the stream; no parsing is done until told to
-    SJSON::Parse json(std::move(stream_example), true); // Boolean here tells the parser if it should drop values sent to generic listeners
+    SJSON::Parse json(std::move(stream_example), {.drop_generics = true}); // Drop values sent to generic listeners
     json
         .listen("test[]", [](const SJSON::JSValue& value) {
             std::cout << "Generic value in 'test': " << value.to_string(4) << '\n';
@@ -173,7 +169,18 @@ int main() {
 
 ## Documentation
 
+### Macros
+
+- `SJSON_LONG_DOUBLE` Compile with this defined to use `long double` precision for numbers.
+
 ### Types
+
+```cpp
+struct ParseOpts {
+    bool drop_generics = false;      // Drop values when called in generic listeners?
+    size_t nested_object_limit = 80; // Max level for nested objects (default=80 like Google Cloud Spanner)
+};
+```
 
 - `typedef std::move_only_function<void(const JSValue& value)> JSONCallback`
 - `typedef std::move_only_function<std::string()> JSONStream`
@@ -187,11 +194,11 @@ int main() {
 
 ### `SJSON::Parse`
 
-- `Parse(bool drop_generics = false)`
-- `Parse(JSONStream&& src, bool drop_generics = false)`
-- `Parse(std::string src)`
-- `static JSValue string(std::string src)`
-- `static JSValue stream(JSONStream&& src)`
+- `Parse(ParseOpts opts = {})`
+- `Parse(JSONStream&& src, ParseOpts opts = {})`
+- `Parse(std::string src, ParseOpts opts = {})`
+- `static JSValue string(std::string src, ParseOpts opts = {})`
+- `static JSValue stream(JSONStream&& src, ParseOpts opts = {})`
 - `Parse& listen(std::string label, JSONCallback&& cb)`
 - `bool recv(std::string chunk)`
 - `bool next()`
@@ -202,14 +209,9 @@ int main() {
 
 - `JSValue() = default`
 - `JSValue(JSNull v)`
-- `JSValue(JSNumber v)`
-- `JSValue(int v)`
-- `JSValue(long v)`
-- `JSValue(unsigned long v)`
+- `JSValue(IntegralOrFloatLike v)`
 - `JSValue(JSBoolean v)`
-- `JSValue(JSString v)`
-- `JSValue(std::string_view v)`
-- `JSValue(const char* v)`
+- `JSValue(StringLike v)`
 - `JSValue(JSObject v)`
 - `JSValue(JSArray v)`
 - `JSValueType type() const`
