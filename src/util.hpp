@@ -40,7 +40,7 @@ namespace SJSON {
     }
     template <typename T, int Base = 10>
     inline bool is_valid_number(const std::string& src) {
-        T value;
+        T value = 0;
         if constexpr (std::is_floating_point_v<T>) {
             static_assert(Base == 10, "float not base 10");
             return is_valid_number(src, std::from_chars(src.data(), src.data() + src.size(), value));
