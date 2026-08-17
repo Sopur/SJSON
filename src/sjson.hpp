@@ -1,6 +1,7 @@
 #pragma once
 #include "listener.hpp"
 #include "token.hpp"
+#include "utf8.hpp"
 #include "util.hpp"
 #include "value.hpp"
 #include <cstddef>
@@ -54,6 +55,6 @@ namespace SJSON {
         void all();
 
         // Data access
-        std::string to_string(int index_length = 0) const;
+        std::string to_string(int index_length = 0, EscapePolicy ep = EscapePolicy::Minimum) const;
     };
 } // namespace SJSON

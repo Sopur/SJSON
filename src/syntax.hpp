@@ -186,6 +186,7 @@ namespace SJSON {
         End,
         Escaping,
         Sequence,
+        SequenceSurrogate,
     };
     inline constexpr char string_char = '"';
     inline constexpr char escape_char = '\\';

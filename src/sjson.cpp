@@ -1,6 +1,7 @@
 #include "sjson.hpp"
 #include "listener.hpp"
 #include "syntax.hpp"
+#include "utf8.hpp"
 #include "value.hpp"
 #include <initializer_list>
 #include <string>
@@ -238,7 +239,7 @@ namespace SJSON {
     }
 
     // Data access
-    std::string Parse::to_string(int index_length) const {
-        return value.to_string(index_length);
+    std::string Parse::to_string(int index_length, EscapePolicy ep) const {
+        return value.to_string(index_length, ep);
     }
 } // namespace SJSON

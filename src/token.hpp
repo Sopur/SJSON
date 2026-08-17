@@ -17,6 +17,8 @@ namespace SJSON {
         EscapeState escape_state;
         std::string escape_sequence;
 
+        void push_escape();
+
     public:
         TokenType type;
         std::string src;

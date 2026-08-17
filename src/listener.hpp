@@ -66,7 +66,7 @@ namespace SJSON {
                         else
                             out += "[" + part + "]";
                     } else {
-                        out += "[" + jsstring_escape(part) + "]";
+                        out += "[" + UTF8::stringify(part) + "]";
                     }
                 } else {
                     if (i != 1) out += ".";

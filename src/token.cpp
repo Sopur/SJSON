@@ -1,14 +1,19 @@
 #include "token.hpp"
 #include "syntax.hpp"
+#include "utf8.hpp"
 #include "util.hpp"
 #include "value.hpp"
-#include <cstdint>
 
 namespace SJSON {
     Token::Token() {
         reset();
     }
 
+    // Util shit
+    void Token::push_escape() {
+        src += UTF8::from_escape(string_to_num<JSUnicodeEscape, 16>(escape_sequence));
+        escape_sequence = "";
+    }
     // Parsing shit
     bool Token::is_operator() const noexcept {
         return type == TokenType::Operator;
@@ -57,6 +62,8 @@ namespace SJSON {
                         if (c == escape_char) {
                             escape_state = EscapeState::Escaping;
                             return;
+                        } else if (escape_sequence.size()) {
+                            push_escape(); // No low surrogate given
                         }
                         if (c == string_char)
                             escape_state = EscapeState::End;
@@ -67,8 +74,9 @@ namespace SJSON {
                         throw sjson_internal_parse_error::invalid_escape_state("token.push(char) -> (string has already finished lexing)");
                     case EscapeState::Escaping: {
                         if (c == sequence_escape_char) {
-                            escape_state = EscapeState::Sequence;
+                            escape_state = escape_sequence.size() ? EscapeState::SequenceSurrogate : EscapeState::Sequence;
                         } else {
+                            if (escape_sequence.size()) push_escape(); // No low surrogate given
                             src += jsescape_map.contains(c) ? jsescape_map.at(c) : c;
                             escape_state = EscapeState::None;
                         }
@@ -77,11 +85,24 @@ namespace SJSON {
                     case EscapeState::Sequence: {
                         escape_sequence += c;
                         if (escape_sequence.size() != sequence_escape_len) return;
-                        if (!is_valid_number<uint16_t, 16>(escape_sequence))
+                        if (!is_valid_number<JSUnicodeEscape, 16>(escape_sequence))
                             throw sjson_parse_error::invalid_escape(escape_sequence);
-                        src += hex_to_utf8(escape_sequence);
+                        auto U = string_to_num<JSUnicodeEscape, 16>(escape_sequence);
+                        if (!UTF8::is_high_surrogate(U)) push_escape();
                         escape_state = EscapeState::None;
+                        return;
+                    }
+                    case EscapeState::SequenceSurrogate: {
+                        escape_sequence += c;
+                        if (escape_sequence.size() != sequence_escape_len * 2) return;
+                        auto high = string_to_num<JSUnicodeEscape, 16>(escape_sequence.substr(0, sequence_escape_len));
+                        auto low_str = escape_sequence.substr(sequence_escape_len, sequence_escape_len * 2);
+                        if (!is_valid_number<JSUnicodeEscape, 16>(low_str))
+                            throw sjson_parse_error::invalid_escape(low_str);
+                        auto low = string_to_num<JSUnicodeEscape, 16>(low_str);
+                        src += UTF8::from_escape(high, low);
                         escape_sequence = "";
+                        escape_state = EscapeState::None;
                         return;
                     }
                 }

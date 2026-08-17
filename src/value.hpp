@@ -1,4 +1,5 @@
 #pragma once
+#include "utf8.hpp"
 #include <concepts>
 #include <map>
 #include <ostream>
@@ -68,7 +69,7 @@ namespace SJSON {
         bool is_string() const noexcept;
         bool is_object() const noexcept;
         bool is_array() const noexcept;
-        std::string to_string(int index_length = 0, int index = 1) const;
+        std::string to_string(int index_length = 0, EscapePolicy ep = EscapePolicy::Minimum, int index = 1) const;
 
         // Type specific
         JSNull& null();

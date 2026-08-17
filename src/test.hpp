@@ -1,5 +1,6 @@
 #pragma once
 #include "sjson.hpp"
+#include "utf8.hpp"
 #include <iostream>
 #include <string>
 
@@ -41,7 +42,7 @@ namespace SJSON {
                 return std::string {src[i++]};
             });
             json.all();
-            return json.to_string();
+            return json.to_string(0, EscapePolicy::Invalids);
         }
         inline void section(const char* name) const {
             std::cout << "[SECTION] Now testing " << name << '\n';
@@ -79,16 +80,22 @@ namespace SJSON {
 
         inline void run() {
             section("unstrict json");
-            test(R"("")");                           // Empty String
-            test(R"("string")");                     // String
-            test(R"("`string's \"quotes\"`")");      // String quotes
-            test(R"("\t\n\r")");                     // String escape shortcuts
-            test(R"("héllo")");                      // UTF8
-            test("\"\uabcdhjk\"");                   // UFT8
-            test("\"\u0001hjk\"", R"("\u0001hjk")"); // Unicode C0 escape
-            test("\"\u007Fhjk\"", R"("\u007Fhjk")"); // Unicode del
-            test("\"\u0080hjk\"", R"("\u0080hjk")"); // Unicode C1 escape
-
+            // I hate UTF8
+            test(R"("")");                              // Empty String
+            test(R"("string")");                        // String
+            test(R"("`string's \"quotes\"`")");         // String quotes
+            test(R"("\t\n\r")");                        // String escape shortcuts
+            test(R"("héllo")");                         // UTF8-2
+            test(R"("h€llo")");                         // UTF8-3
+            test(R"("h😍llo")");                        // UTF8-4
+            test("\"\x80hjk\"", R"("\uFFFDhjk")");      // UTF8-1 invalid
+            test("\"\xC2\x41hjk\"", R"("\uFFFDhjk")");  // UTF8-2 invalid
+            test("\"\u0001hjk\"", R"("\u0001hjk")");    // UTF8 C0
+            test(R"("\u0000hjk")");                     // Unicode C0
+            test(R"("\u1E9Ehjk")", R"("ẞhjk")");        // Unicode point
+            test(R"("\uD83D\uDE0Dhjk")", R"("😍hjk")"); // Unicode surrogate
+            test(R"("\uD83Dhjk")", R"("\uFFFDhjk")");   // Unicode invalid high-surrogate
+            test(R"("\uDE0Dhjk")", R"("\uFFFDhjk")");   // Unicode invalid low-surrogate
             // Num no frac
             test("1");
             test("-1");
@@ -103,7 +110,6 @@ namespace SJSON {
             // Scientific no +
             test("1e10", "10000000000");
             test("-1E10", "-10000000000");
-
             // Keywords
             test("null");
             test("true");

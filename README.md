@@ -34,6 +34,12 @@
 - This parser also supports **all of the above** with **normal strings**, so you may have **all the benefits without using a stream**.
 - This parser is fully RFC4627 compliant, aside from syntax auto-correction (https://www.rfc-editor.org/rfc/rfc4627.html)
 
+### 6. Customizable UTF8 Policies
+
+- This parser can stringify UTF8 strings with custom escape policies.
+- **For example**, using `EscapePolicy::NonASCII` to escape all **non-ascii characters** in `.to_string`.
+- This library also exposes **UTF8 parsing utilities**.
+
 ## Examples
 
 To see all examples, go to the examples directory.
@@ -176,9 +182,19 @@ int main() {
 ### Types
 
 ```cpp
+// Passed into SJSON parse methods
 struct ParseOpts {
     bool drop_generics = false;      // Drop values when called in generic listeners?
     size_t nested_object_limit = 80; // Max level for nested objects (default=80 like Google Cloud Spanner)
+};
+// Passed into `.to_string` methods or SJSON's UTF8 parser
+enum class EscapePolicy {
+    All,      // Escape every character
+    NonASCII, // Escape minimum + characters not in ASCII (0x7F < x)
+    NonBMP,   // Escape minimum + characters not in the BMP (0xFFFF < x)
+    Invalids, // Escape minimum + characters SJSON marked as invalid/corrupted
+    Minimum,  // Escape only required characters (unicode C0, escape shortcuts)
+    None,     // Escape nothing and sanitize (for `UTF8::to_valid` only)
 };
 ```
 
@@ -203,7 +219,7 @@ struct ParseOpts {
 - `bool recv(std::string chunk)`
 - `bool next()`
 - `void all()`
-- `std::string to_string(int index_length = 0) const`
+- `std::string to_string(int index_length = 0, EscapePolicy ep = EscapePolicy::Minimum) const`
 
 ### `SJSON::JSValue`
 
@@ -222,7 +238,7 @@ struct ParseOpts {
 - `bool is_string() const noexcept`
 - `bool is_object() const noexcept`
 - `bool is_array() const noexcept`
-- `std::string to_string(int index_length = 0, int index = 1) const`
+- `std::string to_string(int index_length = 0, EscapePolicy ep = EscapePolicy::Minimum, int index = 1) const`
 - `JSNull& null()`
 - `JSNumber& number()`
 - `JSBoolean& boolean()`
@@ -235,3 +251,13 @@ struct ParseOpts {
 - `const JSString& string() const`
 - `const JSObject& object() const`
 - `const JSArray& array() const`
+
+### `SJSON::UTF8`
+
+- `static bool is_high_surrogate(JSUnicodeEscape e) noexcept`
+- `static bool is_low_surrogate(JSUnicodeEscape e) noexcept`
+- `static std::string from_unicode(JSUnicode U)`
+- `static std::string from_escape(JSUnicodeEscape esc)`
+- `static std::string from_escape(JSUnicodeEscape high, JSUnicodeEscape low)`
+- `static std::string to_valid(const std::string& src, EscapePolicy policy = EscapePolicy::None)`
+- `static std::string stringify(const std::string& src, EscapePolicy policy = EscapePolicy::Minimum)`

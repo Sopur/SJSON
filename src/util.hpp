@@ -2,13 +2,8 @@
 #include "syntax.hpp"
 #include <charconv>
 #include <cstddef>
-#include <cstdint>
-#include <format>
 #include <iomanip>
-#include <ios>
-#include <iostream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -46,15 +41,6 @@ namespace SJSON {
         } else {
             return is_valid_number(src, std::from_chars(src.data(), src.data() + src.size(), value, Base));
         }
-    }
-
-    inline std::string hex_to_utf8(const std::string_view& hex) {
-        if (hex.size() % 2 != 0) throw std::out_of_range("hex not divisible by 2");
-        std::string out;
-        for (size_t i = 0; i < hex.size(); i += 2) {
-            out.push_back(string_to_num<char, 16>(std::string {hex[i], hex[i + 1]}));
-        }
-        return out;
     }
 
     /*

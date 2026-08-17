@@ -48,13 +48,13 @@ namespace SJSON {
     bool JSValue::is_array() const noexcept {
         return std::holds_alternative<JSArray>(src);
     }
-    std::string JSValue::to_string(int index_length, int index) const {
+    std::string JSValue::to_string(int index_length, EscapePolicy ep, int index) const {
         return std::visit([&](const auto& v) -> std::string {
             using V = std::decay_t<decltype(v)>;
             if constexpr (std::is_same_v<V, JSNull>) return "null";
             if constexpr (std::is_same_v<V, JSNumber>) return num_to_string(v);
             if constexpr (std::is_same_v<V, JSBoolean>) return v ? "true" : "false";
-            if constexpr (std::is_same_v<V, JSString>) return jsstring_escape(v);
+            if constexpr (std::is_same_v<V, JSString>) return UTF8::stringify(v, ep);
             if constexpr (std::is_same_v<V, JSObject> || std::is_same_v<V, JSArray>) {
                 // Most of this logic is the same for objects and arrays with slight differences
                 constexpr bool is_obj = std::is_same_v<V, JSObject>;
@@ -70,9 +70,9 @@ namespace SJSON {
                 for (const auto& el : v) {
                     ss << (is_first ? start_char : ',') << newline << el_index;
                     if constexpr (is_obj)
-                        ss << jsstring_escape(el.first) << ":" << space << el.second.to_string(index_length, index + 1);
+                        ss << UTF8::stringify(el.first, ep) << ":" << space << el.second.to_string(index_length, ep, index + 1);
                     else
-                        ss << el.to_string(index_length, index + 1);
+                        ss << el.to_string(index_length, ep, index + 1);
                     is_first = false;
                 }
                 ss << newline << base_index << end_char;
