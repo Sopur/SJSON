@@ -1,6 +1,7 @@
 #pragma once
 #include "syntax.hpp"
 #include <charconv>
+#include <cmath>
 #include <cstddef>
 #include <iomanip>
 #include <sstream>
@@ -12,9 +13,14 @@ namespace SJSON {
     // Needed cuz default behavior is locale sensitive and low precision
     template <typename T>
     inline std::string num_to_string(T x) {
+        if constexpr (std::is_floating_point_v<T>) {
+            if (!std::isfinite(x)) {
+                x = 0;
+            }
+        }
         std::ostringstream oss;
         oss.imbue(std::locale::classic());
-        oss << std::setprecision(std::numeric_limits<T>::max_digits10 - 1) << x;
+        oss << std::setprecision(std::numeric_limits<T>::max_digits10) << x;
         return oss.str();
     }
     template <typename T, int Base = 10>
