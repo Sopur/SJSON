@@ -156,7 +156,7 @@ namespace SJSON {
     JSString Token::to_string() const {
         if (escape_state != EscapeState::End)
             throw sjson_parse_error::unexpected_eof();
-        return src.substr(1, src.size() - 2); // Remove preceding and proceeding string chars cuz everything is already escaped
+        return UTF8::to_valid(src.substr(1, src.size() - 2)); // Remove preceding and proceeding string chars cuz everything is already escaped
     }
     JSValue Token::to_value() const {
         switch (type) {
