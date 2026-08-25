@@ -20,7 +20,7 @@ namespace SJSON {
         }
         std::ostringstream oss;
         oss.imbue(std::locale::classic());
-        oss << std::setprecision(std::numeric_limits<T>::max_digits10) << x;
+        oss << std::setprecision(std::numeric_limits<T>::digits10) << x;
         return oss.str();
     }
     template <typename T, int Base = 10>
